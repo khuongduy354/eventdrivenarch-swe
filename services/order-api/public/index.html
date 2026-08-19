@@ -63,6 +63,10 @@
       .card { padding: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 18px 50px var(--shadow); }
       label { display: block; margin: 14px 0 7px; color: var(--text); font-weight: 600; }
       input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--input); color: var(--text); font: inherit; }
+      fieldset { margin: 18px 0 0; padding: 14px; border: 1px solid var(--border); border-radius: 10px; }
+      legend { padding: 0 6px; color: var(--muted); font-weight: 750; }
+      .demo-option { display: flex; align-items: center; gap: 10px; margin: 8px 0; color: var(--text); font-weight: 600; cursor: pointer; }
+      .demo-option input { width: 18px; height: 18px; margin: 0; accent-color: var(--primary); }
       form button { width: 100%; margin-top: 18px; padding: 13px 16px; border: 0; border-radius: 10px; background: var(--primary); color: white; font: inherit; font-weight: 700; cursor: pointer; }
       form button:hover { background: var(--primary-hover); }
       form button:disabled { cursor: wait; opacity: .65; }
@@ -71,10 +75,16 @@
       pre { min-height: 185px; margin: 0; padding: 16px; overflow: auto; border-radius: 10px; background: var(--code); color: var(--code-text); font: 13px/1.55 ui-monospace, monospace; white-space: pre-wrap; }
       .flow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
       .flow span { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--chip); color: var(--muted); }
+      .tabs { display: flex; gap: 8px; margin-bottom: 20px; padding: 5px; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+      .tab { flex: 1; min-width: max-content; padding: 10px 14px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font: inherit; font-weight: 750; cursor: pointer; }
+      .tab:hover { color: var(--text); }
+      .tab.active { background: var(--primary); color: white; }
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
       .orders { margin-top: 20px; }
       .order { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
       .order:last-child { border-bottom: 0; }
-      .activity { margin-top: 20px; }
+      .activity { min-height: 420px; }
       .activity-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .activity-heading h2 { margin-bottom: 0; }
       .live { color: #0d9488; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
@@ -87,6 +97,12 @@
       .state-completed { background: #d1fae5; color: #047857; }
       .state-failed, .state-dead-lettered { background: #fee2e2; color: #b91c1c; }
       .state-retrying { background: #fef3c7; color: #a16207; }
+      .topic-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+      .topic-title code { color: var(--primary); font-size: 13px; }
+      .message-list { display: grid; gap: 10px; max-height: 360px; overflow: auto; }
+      .message { padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-subtle); }
+      .message strong { display: block; margin-bottom: 4px; }
+      .message small { display: block; overflow-wrap: anywhere; }
       small { color: var(--muted); }
       @media (max-width: 720px) {
         .grid { grid-template-columns: 1fr; }
@@ -110,35 +126,80 @@
         </div>
       </header>
 
-      <section class="grid">
-        <form class="card" id="order-form">
-          <h2>Create an order</h2>
-          <label for="customer">Customer ID</label>
-          <input id="customer" value="customer-demo" required />
-          <label for="product">Product ID</label>
-          <input id="product" value="product-1" required />
-          <label for="quantity">Quantity</label>
-          <input id="quantity" type="number" min="1" value="2" required />
-          <button type="submit">Publish OrderCreated</button>
-        </form>
+      <nav class="tabs" role="tablist" aria-label="Prototype views">
+        <button class="tab active" type="button" data-tab="order">Create order</button>
+        <button class="tab" type="button" data-tab="consumers">Consumers</button>
+        <button class="tab" type="button" data-tab="events">Kafka topic</button>
+        <button class="tab" type="button" data-tab="dlt">Dead letters</button>
+      </nav>
 
+      <section class="tab-panel active" id="tab-order">
+        <section class="grid">
+          <form class="card" id="order-form">
+            <h2>Create an order</h2>
+            <label for="customer">Customer ID</label>
+            <input id="customer" value="customer-demo" required />
+            <label for="product">Product ID</label>
+            <input id="product" value="product-1" required />
+            <label for="quantity">Quantity</label>
+            <input id="quantity" type="number" min="1" value="2" required />
+            <fieldset>
+              <legend>Behavior for this request</legend>
+              <label class="demo-option">
+                <input id="fail-analytics" type="checkbox" checked />
+                Fail analytics → retry → DLT
+              </label>
+              <label class="demo-option">
+                <input id="slow-inventory" type="checkbox" checked />
+                Delay inventory by 8 seconds
+              </label>
+            </fieldset>
+            <button type="submit">Publish OrderCreated</button>
+          </form>
+
+          <article class="card">
+            <h2>Latest API response</h2>
+            <pre id="response">Submit an order to begin.</pre>
+          </article>
+        </section>
+
+        <section class="card orders">
+          <h2>Orders in this API process</h2>
+          <div id="orders"><p>No orders yet.</p></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tab-consumers">
+        <section class="card activity">
+          <div class="activity-heading">
+            <h2>Live consumer activity</h2>
+            <span class="live">● Live</span>
+          </div>
+          <p>Each row is emitted by a consumer while handling the selected request behavior.</p>
+          <div class="activity-list" id="activity"><p>Waiting for an order event.</p></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="tab-events">
         <article class="card">
-          <h2>Latest API response</h2>
-          <pre id="response">Submit an order to begin.</pre>
+          <div class="topic-title">
+            <h2>Kafka topic</h2>
+            <code>order.created</code>
+          </div>
+          <p>Events accepted by Kafka and available to each consumer group.</p>
+          <div class="message-list" id="events"><p>No events published yet.</p></div>
         </article>
       </section>
 
-      <section class="card activity">
-        <div class="activity-heading">
-          <h2>Live consumer activity</h2>
-          <span class="live">● Live</span>
-        </div>
-        <div class="activity-list" id="activity"><p>Waiting for an order event.</p></div>
-      </section>
-
-      <section class="card orders">
-        <h2>Orders in this API process</h2>
-        <div id="orders"><p>No orders yet.</p></div>
+      <section class="tab-panel" id="tab-dlt">
+        <article class="card">
+          <div class="topic-title">
+            <h2>Dead-letter topic</h2>
+            <code>order.created.dlt</code>
+          </div>
+          <p>Events that still failed after all configured attempts.</p>
+          <div class="message-list" id="dead-letters"><p>No dead letters.</p></div>
+        </article>
       </section>
     </main>
 
@@ -147,8 +208,21 @@
       const output = document.querySelector("#response");
       const orders = document.querySelector("#orders");
       const activity = document.querySelector("#activity");
+      const events = document.querySelector("#events");
+      const deadLetters = document.querySelector("#dead-letters");
       const button = form.querySelector("button");
       const themeToggle = document.querySelector("#theme-toggle");
+      const tabs = [...document.querySelectorAll(".tab")];
+      const panels = [...document.querySelectorAll(".tab-panel")];
+
+      function activateTab(name) {
+        for (const tab of tabs) tab.classList.toggle("active", tab.dataset.tab === name);
+        for (const panel of panels) panel.classList.toggle("active", panel.id === `tab-${name}`);
+      }
+
+      for (const tab of tabs) {
+        tab.addEventListener("click", () => activateTab(tab.dataset.tab));
+      }
 
       function renderThemeToggle() {
         const dark = document.documentElement.dataset.theme === "dark";
@@ -194,6 +268,35 @@
           : "<p>Waiting for an order event.</p>";
       }
 
+      async function refreshTopics() {
+        const [eventsResponse, deadLettersResponse] = await Promise.all([
+          fetch("/events"),
+          fetch("/dead-letters"),
+        ]);
+        const [eventData, deadLetterData] = await Promise.all([
+          eventsResponse.json(),
+          deadLettersResponse.json(),
+        ]);
+
+        events.innerHTML = eventData.length
+          ? eventData.map((event) => `
+              <div class="message">
+                <strong>OrderCreated · ${escapeHtml(event.data.customerId)}</strong>
+                <small>order: ${escapeHtml(event.data.orderId)}</small>
+                <small>event: ${escapeHtml(event.eventId)}</small>
+              </div>`).join("")
+          : "<p>No events published yet.</p>";
+
+        deadLetters.innerHTML = deadLetterData.length
+          ? deadLetterData.map((failure) => `
+              <div class="message">
+                <strong>${escapeHtml(failure.failedService)} · ${escapeHtml(failure.attempts)} attempts</strong>
+                <small>order: ${escapeHtml(failure.event?.data?.orderId ?? "unknown")}</small>
+                <small>${escapeHtml(failure.error)}</small>
+              </div>`).join("")
+          : "<p>No dead letters.</p>";
+      }
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         button.disabled = true;
@@ -210,6 +313,10 @@
                 productId: document.querySelector("#product").value,
                 quantity: Number(document.querySelector("#quantity").value),
               }],
+              demo: {
+                failAnalytics: document.querySelector("#fail-analytics").checked,
+                inventoryDelayMs: document.querySelector("#slow-inventory").checked ? 8000 : 0,
+              },
             }),
           });
           const data = await response.json();
@@ -220,6 +327,8 @@
           }, null, 2);
           await refreshOrders();
           await refreshActivity();
+          await refreshTopics();
+          activateTab("consumers");
         } catch (error) {
           output.textContent = `Request failed: ${error.message}`;
         } finally {
@@ -235,7 +344,9 @@
 
       refreshOrders();
       refreshActivity();
+      refreshTopics();
       setInterval(refreshActivity, 750);
+      setInterval(refreshTopics, 1000);
       renderThemeToggle();
     </script>
   </body>

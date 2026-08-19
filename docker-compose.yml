@@ -58,14 +58,14 @@ services:
     command: node services/inventory-service/consumer.js
     environment:
       <<: *common-environment
-      INVENTORY_DELAY_MS: 8000
+      INVENTORY_DELAY_MS: 0
 
   analytics-service:
     <<: *app
     command: node services/analytics-service/consumer.js
     environment:
       <<: *common-environment
-      ANALYTICS_FAIL: "true"
+      ANALYTICS_FAIL: "false"
       MAX_ATTEMPTS: 3
 
   dead-letter-monitor:

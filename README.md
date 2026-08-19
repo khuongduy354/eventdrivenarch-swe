@@ -90,8 +90,8 @@ POST /orders
      v
  Order API -- order.created --> Kafka
                                   |-- notification-service group
-                                  |-- inventory-service group (8-second delay)
-                                  `-- analytics-service group (demo failure)
+                                  |-- inventory-service group (request-controlled delay)
+                                  `-- analytics-service group (request-controlled failure)
                                                    |
                                                    `--> order.created.dlt
 
@@ -130,7 +130,7 @@ The simplest path runs the complete microservices prototype in Docker:
 docker compose up --build
 ```
 
-Compose starts Kafka, creates the topics, then starts the API and four independent worker services. Analytics failure is enabled by default.
+Compose starts Kafka, creates the topics, then starts the API and four independent worker services. Failure and delay behavior are selected explicitly for each order request.
 
 In another terminal:
 
@@ -138,11 +138,11 @@ In another terminal:
 npm run demo
 ```
 
-The API response should appear immediately. Notification completes quickly, analytics retries and enters the DLT, and inventory completes after eight seconds.
+The API response should appear immediately. With both demo options selected, notification completes quickly, analytics retries and enters the DLT, and inventory completes after eight seconds.
 
-Open `http://localhost:3000` for a browser UI that creates orders and displays a live timeline of consumer processing, retries, completions, and dead-lettering.
+Open `http://localhost:3000` for the browser UI. It provides separate tabs for order creation, live consumer processing, the `order.created` topic, and the DLT. The order form controls whether that request should fail analytics or delay inventory.
 
-For a successful analytics run, change `ANALYTICS_FAIL` to `"false"` in `docker-compose.yml`, then restart Compose.
+Clear both behavior checkboxes to run a normal order with no simulated delay or failure.
 
 To run the Node.js services directly instead, keep Kafka running and use:
 

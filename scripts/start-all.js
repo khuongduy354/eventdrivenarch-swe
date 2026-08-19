@@ -6,7 +6,7 @@ const processes = [
   ["services/inventory-service/consumer.js", {}],
   [
     "services/analytics-service/consumer.js",
-    { ANALYTICS_FAIL: process.env.ANALYTICS_FAIL ?? "true" },
+    { ANALYTICS_FAIL: process.env.ANALYTICS_FAIL ?? "false" },
   ],
   ["services/dead-letter-monitor/consumer.js", {}],
 ].map(([entrypoint, extraEnv]) =>
