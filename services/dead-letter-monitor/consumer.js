@@ -1,6 +1,6 @@
-import { deadLetterTopic } from "../config.js";
-import { createKafka } from "../shared/kafka.js";
-import { log } from "../shared/logger.js";
+import { deadLetterTopic } from "../../packages/messaging/config.js";
+import { createKafka } from "../../packages/messaging/kafka.js";
+import { log } from "../../packages/messaging/logger.js";
 
 const service = "dead-letter-monitor";
 const consumer = createKafka(service).consumer({ groupId: service });

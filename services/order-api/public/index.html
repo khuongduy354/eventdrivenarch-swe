@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Order Events Lab</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        background: #0d1117;
+        color: #e6edf3;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at top, #17243a, #0d1117 45%); }
+      main { width: min(960px, calc(100% - 32px)); margin: 0 auto; padding: 48px 0; }
+      header { margin-bottom: 28px; }
+      h1 { margin: 0 0 8px; font-size: clamp(32px, 6vw, 56px); letter-spacing: -0.04em; }
+      h2 { margin-top: 0; }
+      p { color: #9da7b3; line-height: 1.6; }
+      .badge { display: inline-flex; gap: 8px; align-items: center; padding: 7px 12px; border: 1px solid #2b3950; border-radius: 999px; color: #b8c7da; background: #111a28; }
+      .dot { width: 8px; height: 8px; border-radius: 50%; background: #2dd4bf; box-shadow: 0 0 12px #2dd4bf; }
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+      .card { padding: 24px; border: 1px solid #273244; border-radius: 16px; background: rgba(15, 22, 33, 0.88); box-shadow: 0 18px 50px rgba(0,0,0,.25); }
+      label { display: block; margin: 14px 0 7px; color: #cbd5e1; font-weight: 600; }
+      input { width: 100%; padding: 12px 14px; border: 1px solid #344157; border-radius: 10px; background: #0b111b; color: #f8fafc; font: inherit; }
+      button { width: 100%; margin-top: 18px; padding: 13px 16px; border: 0; border-radius: 10px; background: #3b82f6; color: white; font: inherit; font-weight: 700; cursor: pointer; }
+      button:hover { background: #60a5fa; }
+      button:disabled { cursor: wait; opacity: .65; }
+      pre { min-height: 185px; margin: 0; padding: 16px; overflow: auto; border-radius: 10px; background: #080d14; color: #a7f3d0; font: 13px/1.55 ui-monospace, monospace; white-space: pre-wrap; }
+      .flow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+      .flow span { padding: 8px 10px; border: 1px solid #2a374a; border-radius: 8px; background: #101827; color: #b8c7da; }
+      .orders { margin-top: 20px; }
+      .order { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid #273244; }
+      .order:last-child { border-bottom: 0; }
+      small { color: #8490a0; }
+      @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } main { padding-top: 28px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="badge"><span class="dot"></span> Kafka prototype is online</div>
+        <h1>Order Events Lab</h1>
+        <p>Create an order and observe how quickly the API responds. Kafka then fans the event out to notification, inventory, and analytics consumer groups.</p>
+        <div class="flow">
+          <span>Order API</span><span>→</span><span>Kafka</span><span>→</span><span>3 consumer groups</span><span>→</span><span>Retry / DLT</span>
+        </div>
+      </header>
+
+      <section class="grid">
+        <form class="card" id="order-form">
+          <h2>Create an order</h2>
+          <label for="customer">Customer ID</label>
+          <input id="customer" value="customer-demo" required />
+          <label for="product">Product ID</label>
+          <input id="product" value="product-1" required />
+          <label for="quantity">Quantity</label>
+          <input id="quantity" type="number" min="1" value="2" required />
+          <button type="submit">Publish OrderCreated</button>
+        </form>
+
+        <article class="card">
+          <h2>Latest API response</h2>
+          <pre id="response">Submit an order to begin.</pre>
+        </article>
+      </section>
+
+      <section class="card orders">
+        <h2>Orders in this API process</h2>
+        <div id="orders"><p>No orders yet.</p></div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.querySelector("#order-form");
+      const output = document.querySelector("#response");
+      const orders = document.querySelector("#orders");
+      const button = form.querySelector("button");
+
+      async function refreshOrders() {
+        const response = await fetch("/orders");
+        const data = await response.json();
+        orders.innerHTML = data.length
+          ? data.slice().reverse().map((order) => `
+              <div class="order">
+                <div><strong>${escapeHtml(order.customerId)}</strong><br><small>${escapeHtml(order.orderId)}</small></div>
+                <div>${order.items.length} item type(s)<br><small>${escapeHtml(order.status)}</small></div>
+              </div>`).join("")
+          : "<p>No orders yet.</p>";
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        button.disabled = true;
+        output.textContent = "Publishing…";
+        const started = performance.now();
+
+        try {
+          const response = await fetch("/orders", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              customerId: document.querySelector("#customer").value,
+              items: [{
+                productId: document.querySelector("#product").value,
+                quantity: Number(document.querySelector("#quantity").value),
+              }],
+            }),
+          });
+          const data = await response.json();
+          output.textContent = JSON.stringify({
+            httpStatus: response.status,
+            browserRoundTripMs: Math.round(performance.now() - started),
+            ...data,
+          }, null, 2);
+          await refreshOrders();
+        } catch (error) {
+          output.textContent = `Request failed: ${error.message}`;
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      function escapeHtml(value) {
+        const element = document.createElement("div");
+        element.textContent = String(value);
+        return element.innerHTML;
+      }
+
+      refreshOrders();
+    </script>
+  </body>
+</html>

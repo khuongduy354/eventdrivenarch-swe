@@ -1,6 +1,6 @@
 import { Kafka, logLevel, Partitioners } from "kafkajs";
 
-import { brokers } from "../config.js";
+import { brokers } from "./config.js";
 
 export function createKafka(clientId) {
   return new Kafka({

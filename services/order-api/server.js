@@ -1,18 +1,28 @@
 import { randomUUID } from "node:crypto";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import express from "express";
 
-import { orderTopic } from "../config.js";
-import { createOrderCreated } from "../shared/events.js";
-import { createKafka, createProducer } from "../shared/kafka.js";
-import { log } from "../shared/logger.js";
+import { orderTopic } from "../../packages/messaging/config.js";
+import { createOrderCreated } from "../../packages/messaging/events.js";
+import {
+  createKafka,
+  createProducer,
+} from "../../packages/messaging/kafka.js";
+import { log } from "../../packages/messaging/logger.js";
 
 const service = "order-api";
 const app = express();
 const producer = createProducer(createKafka(service));
 const orders = new Map();
+const publicDirectory = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "public",
+);
 
 app.use(express.json());
+app.use(express.static(publicDirectory));
 
 app.get("/health", (_request, response) => response.json({ status: "ok" }));
 app.get("/orders", (_request, response) => response.json([...orders.values()]));

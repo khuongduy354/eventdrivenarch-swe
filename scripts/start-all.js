@@ -1,14 +1,14 @@
 import { spawn } from "node:child_process";
 
 const processes = [
-  ["src/order-api/server.js", {}],
-  ["src/consumers/notification.js", {}],
-  ["src/consumers/inventory.js", {}],
+  ["services/order-api/server.js", {}],
+  ["services/notification-service/consumer.js", {}],
+  ["services/inventory-service/consumer.js", {}],
   [
-    "src/consumers/analytics.js",
+    "services/analytics-service/consumer.js",
     { ANALYTICS_FAIL: process.env.ANALYTICS_FAIL ?? "true" },
   ],
-  ["src/consumers/dead-letter.js", {}],
+  ["services/dead-letter-monitor/consumer.js", {}],
 ].map(([entrypoint, extraEnv]) =>
   spawn(process.execPath, [entrypoint], {
     env: { ...process.env, ...extraEnv },

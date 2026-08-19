@@ -1,4 +1,4 @@
-import { deadLetterTopic, maxAttempts, orderTopic } from "../config.js";
+import { deadLetterTopic, maxAttempts, orderTopic } from "./config.js";
 import { createKafka, createProducer } from "./kafka.js";
 import { log } from "./logger.js";
 import { parseOrderCreated } from "./events.js";

@@ -8,11 +8,11 @@
   },
   "scripts": {
     "topics": "node scripts/create-topics.js",
-    "api": "node src/order-api/server.js",
-    "notification": "node src/consumers/notification.js",
-    "inventory": "node src/consumers/inventory.js",
-    "analytics": "node src/consumers/analytics.js",
-    "dlt": "node src/consumers/dead-letter.js",
+    "api": "node services/order-api/server.js",
+    "notification": "node services/notification-service/consumer.js",
+    "inventory": "node services/inventory-service/consumer.js",
+    "analytics": "node services/analytics-service/consumer.js",
+    "dlt": "node services/dead-letter-monitor/consumer.js",
     "start:all": "node scripts/start-all.js",
     "demo": "./scripts/demo.sh",
     "test": "node --test"

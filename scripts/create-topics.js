@@ -1,5 +1,5 @@
-import { deadLetterTopic, orderTopic } from "../src/config.js";
-import { createKafka } from "../src/shared/kafka.js";
+import { deadLetterTopic, orderTopic } from "../packages/messaging/config.js";
+import { createKafka } from "../packages/messaging/kafka.js";
 
 const admin = createKafka("topic-setup").admin();
 

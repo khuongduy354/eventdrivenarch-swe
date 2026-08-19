@@ -1,4 +1,4 @@
-import { runOrderConsumer } from "../shared/consumer.js";
+import { runOrderConsumer } from "../../packages/messaging/consumer.js";
 
 const delayMs = Number(process.env.INVENTORY_DELAY_MS ?? 8000);
 

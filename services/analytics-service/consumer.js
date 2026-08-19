@@ -1,4 +1,4 @@
-import { runOrderConsumer } from "../shared/consumer.js";
+import { runOrderConsumer } from "../../packages/messaging/consumer.js";
 
 const fail = process.env.ANALYTICS_FAIL === "true";
 

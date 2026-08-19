@@ -143,30 +143,27 @@ Implementation rules:
 ```text
 .
 |-- docker-compose.yml
+|-- Dockerfile
 |-- package.json
 |-- README.md
 |-- PROTOTYPE_PLAN.md
-|-- src
-|   |-- shared
-|   |   |-- kafka.js
-|   |   |-- logger.js
-|   |   |-- retry.js
-|   |   `-- event-schema.js
+|-- services
 |   |-- order-api
-|   |   |-- server.js
-|   |   `-- order-service.js
-|   `-- consumers
-|       |-- notification.js
-|       |-- inventory.js
-|       |-- analytics.js
-|       `-- dead-letter.js
+|   |-- notification-service
+|   |-- inventory-service
+|   |-- analytics-service
+|   `-- dead-letter-monitor
+|-- packages
+|   `-- messaging
 |-- scripts
 |   |-- create-topics.js
 |   `-- demo.sh
 `-- evidence
-    |-- successful-demo.log
+    |-- api-response.json
     `-- failure-demo.log
 ```
+
+Each directory under `services/` is an independently running process and Docker Compose service. `packages/messaging` contains the shared event contract and Kafka plumbing used by this prototype monorepo.
 
 ## Implementation Sequence
 

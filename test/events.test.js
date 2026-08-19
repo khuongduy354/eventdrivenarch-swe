@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createOrderCreated, parseOrderCreated } from "../src/shared/events.js";
+import {
+  createOrderCreated,
+  parseOrderCreated,
+} from "../packages/messaging/events.js";
 
 test("creates and parses an OrderCreated event", () => {
   const order = { orderId: "order-1", customerId: "customer-1", items: [{}] };

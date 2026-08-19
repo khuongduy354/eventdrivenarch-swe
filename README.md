@@ -122,18 +122,13 @@ The dead-letter record additionally contains the failed service, attempt count, 
 
 ## Run
 
-Requirements: Docker, Node.js 20 or newer, and npm.
+The simplest path runs the complete microservices prototype in Docker:
 
 ```bash
-npm install
-docker compose up -d
-
-# Wait until Kafka is healthy, then create the topics.
-npm run topics
-
-# Starts the API and all consumers. Analytics failure is enabled by default.
-npm run start:all
+docker compose up --build
 ```
+
+Compose starts Kafka, creates the topics, then starts the API and four independent worker services. Analytics failure is enabled by default.
 
 In another terminal:
 
@@ -143,13 +138,37 @@ npm run demo
 
 The API response should appear immediately. Notification completes quickly, analytics retries and enters the DLT, and inventory completes after eight seconds.
 
-For a successful analytics run:
+Open `http://localhost:3000` for a small browser UI that creates and lists orders.
+
+For a successful analytics run, change `ANALYTICS_FAIL` to `"false"` in `docker-compose.yml`, then restart Compose.
+
+To run the Node.js services directly instead, keep Kafka running and use:
 
 ```bash
+npm install
+docker compose up -d kafka
+npm run topics
 ANALYTICS_FAIL=false npm run start:all
 ```
 
 Services can also be run separately with `npm run api`, `npm run notification`, `npm run inventory`, `npm run analytics`, and `npm run dlt`.
+
+## Project Structure
+
+```text
+services/
+├── order-api/                 # HTTP API and demo UI
+├── notification-service/      # Independent Kafka consumer
+├── inventory-service/         # Independent slow consumer
+├── analytics-service/         # Independent failing consumer
+└── dead-letter-monitor/       # DLT consumer
+packages/
+└── messaging/                 # Shared Kafka/event contract code
+scripts/                       # Topic setup and local demo helpers
+docker-compose.yml             # Complete microservices environment
+```
+
+Every directory under `services/` is a separately running process and container. The shared package avoids duplicating the event contract and Kafka retry plumbing inside this small monorepo.
 
 Cleanup:
 
