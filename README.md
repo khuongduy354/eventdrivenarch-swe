@@ -3,7 +3,7 @@ Software Architecture Assignment
 # Bài tập: Event-Driven Architecture
 
 Thiết kế và hiện thực một prototype nhỏ để chứng minh cách áp dụng Event-Driven Architecture trong bài toán xử lý sau khi đơn hàng được tạo.
-
+ 
 Thời gian
 
 120 phút
