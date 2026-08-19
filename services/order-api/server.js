@@ -20,8 +20,14 @@ const service = "order-api";
 const app = express();
 const kafka = createKafka(service);
 const producer = createProducer(kafka);
-const activityConsumer = kafka.consumer({ groupId: "order-api-activity-view" });
-const deadLetterConsumer = kafka.consumer({ groupId: "order-api-dlt-view" });
+const viewId = randomUUID();
+const activityConsumer = kafka.consumer({
+  groupId: `order-api-activity-view-${viewId}`,
+});
+const eventConsumer = kafka.consumer({ groupId: `order-api-event-view-${viewId}` });
+const deadLetterConsumer = kafka.consumer({
+  groupId: `order-api-dlt-view-${viewId}`,
+});
 const orders = new Map();
 const activities = [];
 const publishedEvents = [];
@@ -90,8 +96,6 @@ app.post("/orders", async (request, response) => {
       orderId: order.orderId,
       correlationId,
     });
-    publishedEvents.unshift(event);
-    if (publishedEvents.length > 100) publishedEvents.length = 100;
 
     return response.status(201).json({
       order,
@@ -118,12 +122,20 @@ const port = Number(process.env.PORT ?? 3000);
 await Promise.all([
   producer.connect(),
   activityConsumer.connect(),
+  eventConsumer.connect(),
   deadLetterConsumer.connect(),
 ]);
 await activityConsumer.subscribe({ topic: statusTopic, fromBeginning: true });
+await eventConsumer.subscribe({ topic: orderTopic, fromBeginning: true });
 await deadLetterConsumer.subscribe({ topic: deadLetterTopic, fromBeginning: true });
 await activityConsumer.run({
   eachMessage: async ({ message }) => addActivity(JSON.parse(message.value.toString())),
+});
+await eventConsumer.run({
+  eachMessage: async ({ message }) => {
+    publishedEvents.unshift(JSON.parse(message.value.toString()));
+    if (publishedEvents.length > 100) publishedEvents.length = 100;
+  },
 });
 await deadLetterConsumer.run({
   eachMessage: async ({ message }) => {
@@ -143,6 +155,7 @@ async function shutdown() {
   await Promise.allSettled([
     producer.disconnect(),
     activityConsumer.disconnect(),
+    eventConsumer.disconnect(),
     deadLetterConsumer.disconnect(),
   ]);
   process.exit(0);

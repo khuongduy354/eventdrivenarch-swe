@@ -140,7 +140,7 @@ npm run demo
 
 The API response should appear immediately. With both demo options selected, notification completes quickly, analytics retries and enters the DLT, and inventory completes after eight seconds.
 
-Open `http://localhost:3000` for the browser UI. It provides separate tabs for order creation, live consumer processing, the `order.created` topic, and the DLT. The order form controls whether that request should fail analytics or delay inventory.
+Open `http://localhost:3000` for the browser UI. It provides separate tabs for order creation, consumer processing, the `order.created` topic, and the DLT. The Consumers tab gives Notification, Inventory, and Analytics their own service cards. The order form controls whether that request should fail analytics or delay inventory.
 
 Clear both behavior checkboxes to run a normal order with no simulated delay or failure.
 

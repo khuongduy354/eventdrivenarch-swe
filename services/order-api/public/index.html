@@ -84,14 +84,17 @@
       .orders { margin-top: 20px; }
       .order { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
       .order:last-child { border-bottom: 0; }
-      .activity { min-height: 420px; }
       .activity-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .activity-heading h2 { margin-bottom: 0; }
       .live { color: #0d9488; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-      .activity-list { display: grid; gap: 10px; margin-top: 20px; }
-      .activity-row { display: grid; grid-template-columns: 110px 1fr auto; align-items: center; gap: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-subtle); }
-      .service { font-weight: 750; }
+      .consumer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+      .consumer-card { padding: 18px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: 0 14px 36px var(--shadow); }
+      .consumer-card h3 { margin: 0 0 4px; }
+      .consumer-group { display: block; margin-bottom: 16px; color: var(--muted); font: 12px/1.5 ui-monospace, monospace; }
+      .activity-list { display: grid; gap: 8px; }
+      .activity-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-subtle); }
       .activity-meta { color: var(--muted); font-size: 13px; margin-top: 3px; }
+      .activity-time { display: block; margin-bottom: 3px; }
       .state { padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
       .state-published, .state-processing { background: #dbeafe; color: #1d4ed8; }
       .state-completed { background: #d1fae5; color: #047857; }
@@ -106,9 +109,8 @@
       small { color: var(--muted); }
       @media (max-width: 720px) {
         .grid { grid-template-columns: 1fr; }
+        .consumer-grid { grid-template-columns: 1fr; }
         main { padding-top: 28px; }
-        .activity-row { grid-template-columns: 1fr auto; }
-        .activity-time { grid-column: 1 / -1; }
       }
     </style>
   </head>
@@ -170,13 +172,31 @@
       </section>
 
       <section class="tab-panel" id="tab-consumers">
-        <section class="card activity">
+        <section class="card">
           <div class="activity-heading">
-            <h2>Live consumer activity</h2>
+            <div>
+              <h2>Consumer services</h2>
+              <p>Each box is an independent Kafka consumer group.</p>
+            </div>
             <span class="live">● Live</span>
           </div>
-          <p>Each row is emitted by a consumer while handling the selected request behavior.</p>
-          <div class="activity-list" id="activity"><p>Waiting for an order event.</p></div>
+          <div class="consumer-grid">
+            <article class="consumer-card">
+              <h3>Notification</h3>
+              <span class="consumer-group">group: notification-service</span>
+              <div class="activity-list" id="notification-activity"><p>Waiting for an event.</p></div>
+            </article>
+            <article class="consumer-card">
+              <h3>Inventory</h3>
+              <span class="consumer-group">group: inventory-service</span>
+              <div class="activity-list" id="inventory-activity"><p>Waiting for an event.</p></div>
+            </article>
+            <article class="consumer-card">
+              <h3>Analytics</h3>
+              <span class="consumer-group">group: analytics-service</span>
+              <div class="activity-list" id="analytics-activity"><p>Waiting for an event.</p></div>
+            </article>
+          </div>
         </section>
       </section>
 
@@ -207,7 +227,11 @@
       const form = document.querySelector("#order-form");
       const output = document.querySelector("#response");
       const orders = document.querySelector("#orders");
-      const activity = document.querySelector("#activity");
+      const consumerLists = {
+        "notification-service": document.querySelector("#notification-activity"),
+        "inventory-service": document.querySelector("#inventory-activity"),
+        "analytics-service": document.querySelector("#analytics-activity"),
+      };
       const events = document.querySelector("#events");
       const deadLetters = document.querySelector("#dead-letters");
       const button = form.querySelector("button");
@@ -251,21 +275,27 @@
       async function refreshActivity() {
         const response = await fetch("/activity");
         const data = await response.json();
-        activity.innerHTML = data.length
-          ? data.slice(0, 40).map((item) => {
-              const attempt = item.attempt ? ` · attempt ${item.attempt}` : "";
-              const error = item.error ? ` · ${item.error}` : "";
-              return `
-                <div class="activity-row">
-                  <small class="activity-time">${escapeHtml(new Date(item.occurredAt).toLocaleTimeString())}</small>
-                  <div>
-                    <div class="service">${escapeHtml(item.service)}</div>
-                    <div class="activity-meta">${escapeHtml(item.orderId)}${escapeHtml(attempt)}${escapeHtml(error)}</div>
-                  </div>
-                  <span class="state state-${escapeHtml(item.state)}">${escapeHtml(item.state)}</span>
-                </div>`;
-            }).join("")
-          : "<p>Waiting for an order event.</p>";
+
+        for (const [service, list] of Object.entries(consumerLists)) {
+          const serviceActivity = data
+            .filter((item) => item.service === service)
+            .slice(0, 8);
+          list.innerHTML = serviceActivity.length
+            ? serviceActivity.map((item) => {
+                const order = item.orderId ? item.orderId.slice(0, 8) : "unknown";
+                const attempt = item.attempt ? `attempt ${item.attempt}` : "";
+                const error = item.error ? ` · ${item.error}` : "";
+                return `
+                  <div class="activity-row">
+                    <div>
+                      <small class="activity-time">${escapeHtml(new Date(item.occurredAt).toLocaleTimeString())}</small>
+                      <div class="activity-meta">${escapeHtml(order)} · ${escapeHtml(attempt)}${escapeHtml(error)}</div>
+                    </div>
+                    <span class="state state-${escapeHtml(item.state)}">${escapeHtml(item.state)}</span>
+                  </div>`;
+              }).join("")
+            : "<p>Waiting for an event.</p>";
+        }
       }
 
       async function refreshTopics() {
