@@ -1,4 +1,9 @@
-import { deadLetterTopic, maxAttempts, orderTopic } from "./config.js";
+import {
+  deadLetterTopic,
+  maxAttempts,
+  orderTopic,
+  statusTopic,
+} from "./config.js";
 import { createKafka, createProducer } from "./kafka.js";
 import { log } from "./logger.js";
 import { parseOrderCreated } from "./events.js";
@@ -51,9 +56,11 @@ export async function runOrderConsumer({ service, handle }) {
       for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
         try {
           log(service, "processing started", { ...identifiers(event), attempt });
+          await emitStatus(producer, service, event, "processing", { attempt });
           await handle(event, attempt);
           processedEventIds.add(event.eventId);
           log(service, "processing completed", { ...identifiers(event), attempt });
+          await emitStatus(producer, service, event, "completed", { attempt });
           return;
         } catch (error) {
           log(service, "processing failed", {
@@ -61,8 +68,16 @@ export async function runOrderConsumer({ service, handle }) {
             attempt,
             error: error.message,
           });
+          await emitStatus(producer, service, event, "failed", {
+            attempt,
+            error: error.message,
+          });
 
           if (attempt < maxAttempts) {
+            await emitStatus(producer, service, event, "retrying", {
+              attempt,
+              nextAttempt: attempt + 1,
+            });
             await sleep(2 ** (attempt - 1) * 1000);
           } else {
             await publishDeadLetter(producer, {
@@ -74,11 +89,41 @@ export async function runOrderConsumer({ service, handle }) {
               failedAt: new Date().toISOString(),
               event,
             });
+            await emitStatus(producer, service, event, "dead-lettered", {
+              attempt,
+              error: error.message,
+            });
           }
         }
       }
     },
   });
+}
+
+async function emitStatus(producer, service, event, state, details = {}) {
+  try {
+    await producer.send({
+      topic: statusTopic,
+      messages: [
+        {
+          key: event.data.orderId,
+          value: JSON.stringify({
+            occurredAt: new Date().toISOString(),
+            service,
+            state,
+            ...identifiers(event),
+            ...details,
+          }),
+        },
+      ],
+    });
+  } catch (error) {
+    log(service, "status publish failed", {
+      ...identifiers(event),
+      state,
+      error: error.message,
+    });
+  }
 }
 
 async function publishDeadLetter(producer, failure) {

@@ -94,6 +94,8 @@ POST /orders
                                   `-- analytics-service group (demo failure)
                                                    |
                                                    `--> order.created.dlt
+
+ Consumers -- order.processing-status --> Order API activity view --> Browser
 ```
 
 The API waits for Kafka to accept `OrderCreated`, but it does not wait for any consumer to finish. Each service has a different consumer group, so every service receives the event. Replicas of one service would share its group and divide partitions.
@@ -138,7 +140,7 @@ npm run demo
 
 The API response should appear immediately. Notification completes quickly, analytics retries and enters the DLT, and inventory completes after eight seconds.
 
-Open `http://localhost:3000` for a small browser UI that creates and lists orders.
+Open `http://localhost:3000` for a browser UI that creates orders and displays a live timeline of consumer processing, retries, completions, and dead-lettering.
 
 For a successful analytics run, change `ANALYTICS_FAIL` to `"false"` in `docker-compose.yml`, then restart Compose.
 

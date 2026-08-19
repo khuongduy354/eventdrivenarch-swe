@@ -1,4 +1,8 @@
-import { deadLetterTopic, orderTopic } from "../packages/messaging/config.js";
+import {
+  deadLetterTopic,
+  orderTopic,
+  statusTopic,
+} from "../packages/messaging/config.js";
 import { createKafka } from "../packages/messaging/kafka.js";
 
 const admin = createKafka("topic-setup").admin();
@@ -9,7 +13,8 @@ await admin.createTopics({
   topics: [
     { topic: orderTopic, numPartitions: 3, replicationFactor: 1 },
     { topic: deadLetterTopic, numPartitions: 1, replicationFactor: 1 },
+    { topic: statusTopic, numPartitions: 1, replicationFactor: 1 },
   ],
 });
-console.log(`Topics ready: ${orderTopic}, ${deadLetterTopic}`);
+console.log(`Topics ready: ${orderTopic}, ${deadLetterTopic}, ${statusTopic}`);
 await admin.disconnect();
