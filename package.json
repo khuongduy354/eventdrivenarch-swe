@@ -1,0 +1,24 @@
+{
+  "name": "eventdrivenarch-swe",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "topics": "node scripts/create-topics.js",
+    "api": "node src/order-api/server.js",
+    "notification": "node src/consumers/notification.js",
+    "inventory": "node src/consumers/inventory.js",
+    "analytics": "node src/consumers/analytics.js",
+    "dlt": "node src/consumers/dead-letter.js",
+    "start:all": "node scripts/start-all.js",
+    "demo": "./scripts/demo.sh",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "kafkajs": "^2.2.4"
+  }
+}
