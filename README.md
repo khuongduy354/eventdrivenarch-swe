@@ -1,5 +1,7 @@
 Software Architecture Assignment
 
+> Implementation planning: see [PROTOTYPE_PLAN.md](./PROTOTYPE_PLAN.md).
+
 # Bài tập: Event-Driven Architecture
 
 Thiết kế và hiện thực một prototype nhỏ để chứng minh cách áp dụng Event-Driven Architecture trong bài toán xử lý sau khi đơn hàng được tạo.
