@@ -155,6 +155,39 @@ ANALYTICS_FAIL=false npm run start:all
 
 Services can also be run separately with `npm run api`, `npm run notification`, `npm run inventory`, `npm run analytics`, and `npm run dlt`.
 
+### Make CLI
+
+The Makefile provides short commands for starting the environment and triggering each request behavior:
+
+```bash
+make help
+make up
+make request-normal
+make request-failure
+make request-slow
+make request-demo
+```
+
+Inspect the prototype views from the terminal:
+
+```bash
+make activity
+make events
+make dlt
+make logs
+```
+
+Request values can be overridden without editing a file:
+
+```bash
+make request \
+  CUSTOMER_ID=customer-42 \
+  PRODUCT_ID=product-9 \
+  QUANTITY=3 \
+  FAIL_ANALYTICS=true \
+  INVENTORY_DELAY_MS=2000
+```
+
 ## Project Structure
 
 ```text
